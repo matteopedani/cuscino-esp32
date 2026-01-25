@@ -107,13 +107,8 @@ void loop() {
 ### 4. Set Up GitHub Actions Runner
 
 The workflow uses a self-hosted runner. Set up your runner with:
-- PlatformIO CLI installed
+- PlatformIO CLI installed and in PATH (`pip install platformio`)
 - Git configured
-
-Update the PlatformIO path in `.github/workflows/build-release.yml` if needed:
-```yaml
-& "C:/Python314/Scripts/pio.exe" run -e esp32dev
-```
 
 ### 5. Create a Release
 
