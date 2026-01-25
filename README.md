@@ -11,6 +11,16 @@ A reusable Over-The-Air (OTA) firmware update system for ESP32 projects using Pl
 - Automatic version checking with update buttons
 - GitHub Actions workflow for automated builds and releases
 
+## Screenshots
+
+| Up-to-Date | Update Available |
+|------------|------------------|
+| ![Up-to-Date](images/ota_up_to_date.png) | ![Update Available](images/ota_update_available.png) |
+
+| SPIFFS Update Only |
+|--------------------|
+| ![SPIFFS Update](images/ota_spiffs_update.png) |
+
 ## Quick Start
 
 ### 1. Copy Files to Your Project
