@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OTA Firmware Update</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style_firmware_update.css">
+  <script src="ota_config.js"></script>
+  <script src="script_firmware_update.js"></script>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <div class="container">
+    <h2>OTA Firmware Update</h2>
+    <p id="versionInfo">Checking version...</p>
+
+    <div class="upload-area" id="drop-area">
+      <p>
+        Drag & drop <strong><code>FIRMWARE.bin</code></strong> OR <strong><code>SPIFFS.bin</code></strong> file here<br />
+        or <strong>click to browse</strong>
+      </p>
+    </div>
+    <input type="file" id="file_input" accept=".bin" />
+
+    <div class="progress-container" id="progress_container">
+      <div class="progress-bar" id="progress_bar"></div>
+    </div>
+
+    <div id="status">Awaiting file...</div>
+    <br>
+
+    <button id="githubFirmware">Fetching Firmware status</button>
+    <button id="githubSPIFFS">Fetching SPIFFS status</button>
+  </div>
+</body>
+</html>
