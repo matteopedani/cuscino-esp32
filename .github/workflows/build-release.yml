@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # Update this path if PlatformIO is installed elsewhere on your runner
+  PIO_PATH: C:/Python314/Scripts/pio.exe
+
 jobs:
   build:
     runs-on: self-hosted
@@ -33,7 +37,7 @@ jobs:
       - name: Build Firmware
         shell: powershell
         run: |
-          python -m platformio run -e esp32dev
+          & "$env:PIO_PATH" run -e esp32dev
 
       - name: Update data/version.txt (SPIFFS version)
         shell: powershell
@@ -44,7 +48,7 @@ jobs:
       - name: Build SPIFFS
         shell: powershell
         run: |
-          python -m platformio run -t buildfs -e esp32dev
+          & "$env:PIO_PATH" run -t buildfs -e esp32dev
 
       - name: Rename binaries
         shell: powershell
