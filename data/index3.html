@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ESP32 5x5 Smart Posture</title>
+
+<style>
+body {
+  background:#111;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+canvas {
+  margin-top:20px;
+  border:1px solid #333;
+  image-rendering: pixelated;
+}
+
+#info {
+  margin-top:10px;
+  font-size:14px;
+  color:#0f0;
+}
+
+button {
+  margin-top:10px;
+  padding:10px 15px;
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h2>5x5 Heatmap + Posture Detection</h2>
+
+<button onclick="calibrate()">Calibrate</button>
+
+<canvas id="c" width="250" height="250"></canvas>
+
+<div id="info">waiting...</div>
+
+<script>
+const N = 5;
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const cell = canvas.width / N;
+
+// raw + filtered
+let raw = Array(25).fill(0);
+let filt = Array(25).fill(0);
+let baseline = Array(25).fill(0);
+
+// auto scaling
+let vmin = 0;
+let vmax = 1;
+
+// smoothing factor (pseudo Kalman)
+const alpha = 0.25;
+
+// ---------------- DRAW ----------------
+function draw() {
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+
+      let v = filt[y*N + x];
+
+      // normalize auto min/max
+      let n = (v - vmin) / (vmax - vmin + 0.0001);
+      n = Math.max(0, Math.min(1, n));
+
+      let r = Math.floor(n * 255);
+      let b = 255 - r;
+
+      ctx.fillStyle = `rgb(${r},0,${b})`;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+    }
+  }
+}
+
+// ---------------- POSTURE ----------------
+function computePosture(arr) {
+  let sum = 0;
+  let mx = 0;
+  let my = 0;
+
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      let v = arr[y*N + x];
+      sum += v;
+      mx += x * v;
+      my += y * v;
+    }
+  }
+
+  let cx = sum > 0 ? mx / sum : 2;
+  let cy = sum > 0 ? my / sum : 2;
+
+  let center = (N - 1) / 2;
+
+  let dx = cx - center;
+  let dy = cy - center;
+
+  let state = "EMPTY";
+
+  if (sum > 1.5) {
+    if (Math.abs(dx) < 0.7 && Math.abs(dy) < 0.7) state = "CENTER";
+    else if (Math.abs(dx) > Math.abs(dy)) state = "LEFT/RIGHT SHIFT";
+    else state = "FORWARD/BACK SHIFT";
+  }
+
+  return {cx, cy, sum, state};
+}
+
+// ---------------- CALIBRATION ----------------
+function calibrate() {
+  baseline = [...raw];
+  document.getElementById("info").innerText = "Calibrated";
+}
+
+// ---------------- UPDATE LOOP ----------------
+async function update() {
+  try {
+    const r = await fetch("/heatmap");
+    const j = await r.json();
+
+    raw = j.data;
+
+    // update min/max slowly (auto gain control)
+    let localMin = Math.min(...raw);
+    let localMax = Math.max(...raw);
+
+    vmin = vmin * 0.95 + localMin * 0.05;
+    vmax = vmax * 0.95 + localMax * 0.05;
+
+    // smoothing (pseudo Kalman)
+    for (let i = 0; i < 25; i++) {
+      let target = raw[i] - baseline[i];
+      filt[i] = filt[i] + alpha * (target - filt[i]);
+    }
+
+    let p = computePosture(filt);
+
+    draw();
+
+    document.getElementById("info").innerText =
+      `state: ${p.state} | sum: ${p.sum.toFixed(2)} | cx: ${p.cx.toFixed(2)} cy: ${p.cy.toFixed(2)}`;
+
+  } catch(e) {
+    document.getElementById("info").innerText = "error";
+  }
+}
+
+// 5 Hz
+setInterval(update, 200);
+draw();
+
+</script>
+
+</body>
+</html>

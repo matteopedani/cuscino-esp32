@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Heatmap</title>
+
+<style>
+body { background:#111; color:white; text-align:center; font-family:Arial; }
+canvas { border:1px solid #333; margin-top:20px; }
+</style>
+</head>
+
+<body>
+  
+  <!-- ================= NAV MENU ================= -->
+<div class="nav">
+  <a href="/index.html">Heatmap</a>
+  <a href="/index2.html">Smoothed</a>
+  <a href="/index_firmware_update.html">OTA</a>
+</div>
+
+<h2>Raw Heatmap</h2>
+<canvas id="c" width="250" height="250"></canvas>
+<script>
+const N = 5;
+let data = Array(25).fill(0);
+let smooth = Array(25).fill(0);
+
+function draw() {
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const cell = canvas.width / N;
+
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+
+      let i = y*N + x;
+
+      let v = smooth[i];
+
+      let r = v * 255;
+      let b = 255 - r;
+
+      ctx.fillStyle = `rgb(${r},0,${b})`;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+    }
+  }
+}
+
+// 8-neighbors smoothing (browser side)
+function smooth8(src) {
+  let out = new Array(25).fill(0);
+
+  const idx = (x,y)=>y*5+x;
+
+  for(let y=0;y<5;y++){
+    for(let x=0;x<5;x++){
+
+      let sum=0, count=0;
+
+      for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+          let nx=x+dx, ny=y+dy;
+          if(nx>=0&&nx<5&&ny>=0&&ny<5){
+            sum += src[idx(nx,ny)];
+            count++;
+          }
+        }
+      }
+
+      out[idx(x,y)] = sum/count;
+    }
+  }
+
+  return out;
+}
+
+async function update() {
+  const r = await fetch("/heatmap");
+  const j = await r.json();
+
+  data = j.raw;
+
+  // light smoothing browser side
+  smooth = smooth8(data);
+
+  draw();
+}
+
+setInterval(update, 200);
+</script>
+
+</body>
+</html>

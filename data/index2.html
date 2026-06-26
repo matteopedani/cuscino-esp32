@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Smoothed Heatmap</title>
+
+<style>
+body { background:#111; color:white; text-align:center; font-family:Arial; }
+canvas { border:1px solid #333; margin-top:20px; }
+</style>
+</head>
+
+<body>
+
+
+    <!-- ================= NAV MENU ================= -->
+<div class="nav">
+  <a href="/index.html">Heatmap</a>
+  <a href="/index2.html">Smoothed</a>
+  <a href="/index_firmware_update.html">OTA</a>
+</div>
+
+
+<h2>Smoothed Heatmap (8 neighbors)</h2>
+
+<canvas id="c" width="250" height="250"></canvas>
+
+<script>
+
+const N = 5;
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const cell = canvas.width / N;
+
+let data = Array(25).fill(0);
+let smooth = Array(25).fill(0);
+
+// ================= 8 VICINI =================
+function spatialSmooth(x, y) {
+
+    let sum = 0;
+    let count = 0;
+
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+
+            let nx = x + dx;
+            let ny = y + dy;
+
+            if (nx >= 0 && nx < N && ny >= 0 && ny < N) {
+                sum += data[ny*N + nx];
+                count++;
+            }
+        }
+    }
+
+    return sum / count;
+}
+
+// ================= DRAW =================
+function draw() {
+
+    for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+
+            let i = y*N + x;
+
+            let v = spatialSmooth(x, y);
+
+            // smoothing temporale
+            smooth[i] = smooth[i] + 0.28 * (v - smooth[i]);
+
+            let val = smooth[i];
+
+            let r = val * 255;
+            let b = 255 - r;
+
+            ctx.fillStyle = `rgb(${r},0,${b})`;
+            ctx.fillRect(x*cell, y*cell, cell, cell);
+        }
+    }
+}
+
+// ================= UPDATE =================
+async function update() {
+    const r = await fetch("/heatmap");
+    const j = await r.json();
+    data = j.data;
+    draw();
+}
+
+setInterval(update, 200);
+draw();
+
+</script>
+
+</body>
+</html>
+
